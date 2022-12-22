@@ -4,12 +4,17 @@ pragma solidity 0.8.17;
 import "./interfaces/IStakeableVestingFactory.sol";
 import "./StakeableVesting.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract StakeableVestingFactory is IStakeableVestingFactory {
+    address public immutable override token;
+
     address public immutable override stakeableVestingImplementation;
 
-    constructor(address token) {
-        stakeableVestingImplementation = address(new StakeableVesting(token));
+    constructor(address _token) {
+        require(_token != address(0), "Token address zero");
+        token = _token;
+        stakeableVestingImplementation = address(new StakeableVesting(_token));
     }
 
     function deployStakeableVesting(

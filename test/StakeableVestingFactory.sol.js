@@ -23,36 +23,53 @@ describe('StakeableVestingFactory', function () {
   }
 
   describe('constructor', function () {
-    it('deploys initialized StakeableVesting implementation', async function () {
-      const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
-        deployStakeableVestingFactory
-      );
-      const stakeableVestingImplementationAddress = await stakeableVestingFactory.stakeableVestingImplementation();
-      const eoaDeployedStakeableVesting = await (
-        await ethers.getContractFactory('StakeableVesting', roles.deployer)
-      ).deploy(mockApi3Token.address);
-      expect(await ethers.provider.getCode(stakeableVestingImplementationAddress)).to.equal(
-        await ethers.provider.getCode(eoaDeployedStakeableVesting.address)
-      );
+    context('Token address is not zero', function () {
+      it('deploys with initialized StakeableVesting implementation', async function () {
+        const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
+          deployStakeableVestingFactory
+        );
+        expect(await stakeableVestingFactory.token()).to.equal(mockApi3Token.address);
+        const stakeableVestingImplementationAddress = await stakeableVestingFactory.stakeableVestingImplementation();
+        const eoaDeployedStakeableVesting = await (
+          await ethers.getContractFactory('StakeableVesting', roles.deployer)
+        ).deploy(mockApi3Token.address);
+        expect(await ethers.provider.getCode(stakeableVestingImplementationAddress)).to.equal(
+          await ethers.provider.getCode(eoaDeployedStakeableVesting.address)
+        );
 
-      const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
-      const stakeableVestingImplementation = new ethers.Contract(
-        stakeableVestingImplementationAddress,
-        StakeableVesting.abi,
-        roles.deployer
-      );
-      expect(await stakeableVestingImplementation.token()).to.equal(mockApi3Token.address);
-      expect(await stakeableVestingImplementation.owner()).to.equal(ethers.constants.AddressZero);
-      expect(await stakeableVestingImplementation.beneficiary()).to.equal('0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF');
-      await expect(
-        stakeableVestingImplementation.initialize(
-          roles.deployer.address,
-          roles.beneficiary.address,
-          vestingParameters.startTimestamp,
-          vestingParameters.endTimestamp,
-          vestingParameters.amount
-        )
-      ).to.be.revertedWith('Already initialized');
+        const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
+        const stakeableVestingImplementation = new ethers.Contract(
+          stakeableVestingImplementationAddress,
+          StakeableVesting.abi,
+          roles.deployer
+        );
+        expect(await stakeableVestingImplementation.token()).to.equal(mockApi3Token.address);
+        expect(await stakeableVestingImplementation.owner()).to.equal(ethers.constants.AddressZero);
+        expect(await stakeableVestingImplementation.beneficiary()).to.equal(
+          '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF'
+        );
+        await expect(
+          stakeableVestingImplementation.initialize(
+            roles.deployer.address,
+            roles.beneficiary.address,
+            vestingParameters.startTimestamp,
+            vestingParameters.endTimestamp,
+            vestingParameters.amount
+          )
+        ).to.be.revertedWith('Already initialized');
+      });
+    });
+    context('Token address is zero', function () {
+      it('reverts', async function () {
+        const { roles } = await loadFixture(deployStakeableVestingFactory);
+        const StakeableVestingFactoryFactory = await ethers.getContractFactory(
+          'StakeableVestingFactory',
+          roles.deployer
+        );
+        await expect(StakeableVestingFactoryFactory.deploy(ethers.constants.AddressZero)).to.be.revertedWith(
+          'Token address zero'
+        );
+      });
     });
   });
 
