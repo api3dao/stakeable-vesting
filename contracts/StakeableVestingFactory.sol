@@ -13,9 +13,18 @@ contract StakeableVestingFactory is IStakeableVestingFactory {
     }
 
     function deployStakeableVesting(
-        address beneficiary
+        address beneficiary,
+        uint32 startTimestamp,
+        uint32 endTimestamp,
+        uint192 amount
     ) external override returns (address stakeableVesting) {
         stakeableVesting = Clones.clone(stakeableVestingImplementation);
-        IStakeableVesting(stakeableVesting).initialize(msg.sender, beneficiary);
+        IStakeableVesting(stakeableVesting).initialize(
+            msg.sender,
+            beneficiary,
+            startTimestamp,
+            endTimestamp,
+            amount
+        );
     }
 }
