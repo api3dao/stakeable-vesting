@@ -23,6 +23,32 @@ describe('StakeableVesting', function () {
   }
 
   describe('constructor', function () {
+    context('Token address is not zero', function () {
+      it('constructs uninitializable StakeableVesting', async function () {
+        const { roles } = await loadFixture(deployStakeableVesting);
+        const StakeableVestingFactory = await ethers.getContractFactory('StakeableVesting', roles.deployer);
+        await expect(StakeableVestingFactory.deploy(ethers.constants.AddressZero)).to.be.revertedWith(
+          'Token address zero'
+        );
+      });
+    });
+    context('Token address is zero', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, mockApi3Token, stakeableVesting } = await loadFixture(deployStakeableVesting);
+        expect(await stakeableVesting.owner()).to.equal(ethers.constants.AddressZero);
+        expect(await stakeableVesting.token()).to.equal(mockApi3Token.address);
+        expect(await stakeableVesting.beneficiary()).to.equal('0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF');
+        await expect(
+          stakeableVesting.initialize(
+            roles.deployer.address,
+            roles.beneficiary.address,
+            vestingParameters.startTimestamp,
+            vestingParameters.endTimestamp,
+            vestingParameters.amount
+          )
+        ).to.be.revertedWith('Already initialized');
+      });
+    });
     it('constructs uninitializable StakeableVesting', async function () {
       const { roles, vestingParameters, mockApi3Token, stakeableVesting } = await loadFixture(deployStakeableVesting);
       expect(await stakeableVesting.owner()).to.equal(ethers.constants.AddressZero);
