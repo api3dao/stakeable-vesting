@@ -18,6 +18,11 @@ contract StakeableVesting is Ownable, IStakeableVesting {
 
     Vesting public override vesting;
 
+    modifier onlyBeneficiary() {
+        require(msg.sender == beneficiary, "Sender not beneficiary");
+        _;
+    }
+
     constructor(address _api3Token) {
         require(_api3Token != address(0), "Api3Token address zero");
         api3Token = _api3Token;
@@ -57,8 +62,7 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         emit SetBeneficiary(_beneficiary);
     }
 
-    function withdrawFromVesting() external override {
-        require(msg.sender == beneficiary, "Sender not beneficiary");
+    function withdrawAsBeneficiary() external override onlyBeneficiary {
         uint256 balance = IERC20(api3Token).balanceOf(address(this));
         uint256 poolBalance = 0; // TODO: Consider both staked and unstaked tokens
         uint256 totalBalance = balance + poolBalance;
@@ -74,7 +78,14 @@ contract StakeableVesting is Ownable, IStakeableVesting {
             : vestedAmountInTotalBalance;
         require(withdrawalAmount != 0, "No balance to withdraw");
         IERC20(api3Token).transfer(msg.sender, withdrawalAmount);
-        emit WithdrawnFromVesting(withdrawalAmount);
+        emit WithdrawnAsBeneficiary(withdrawalAmount);
+    }
+
+    function withdrawAsOwner() external override onlyOwner {
+        uint256 withdrawalAmount = IERC20(api3Token).balanceOf(address(this));
+        require(withdrawalAmount != 0, "No balance to withdraw");
+        IERC20(api3Token).transfer(msg.sender, withdrawalAmount);
+        emit WithdrawnAsOwner(withdrawalAmount);
     }
 
     function unvestedAmount() public view override returns (uint256) {

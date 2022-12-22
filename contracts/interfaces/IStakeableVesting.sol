@@ -4,7 +4,9 @@ pragma solidity 0.8.17;
 interface IStakeableVesting {
     event SetBeneficiary(address beneficiary);
 
-    event WithdrawnFromVesting(uint256 amount);
+    event WithdrawnAsBeneficiary(uint256 amount);
+
+    event WithdrawnAsOwner(uint256 amount);
 
     function initialize(
         address _owner,
@@ -14,7 +16,9 @@ interface IStakeableVesting {
         uint192 amount
     ) external;
 
-    function withdrawFromVesting() external;
+    function withdrawAsBeneficiary() external;
+
+    function withdrawAsOwner() external;
 
     function unvestedAmount() external view returns (uint256);
 
