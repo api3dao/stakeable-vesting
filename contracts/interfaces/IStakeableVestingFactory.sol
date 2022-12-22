@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 interface IStakeableVestingFactory {
     function deployStakeableVesting(
-        address owner,
         address beneficiary
     ) external returns (address stakeableVesting);
 

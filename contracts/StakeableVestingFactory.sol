@@ -9,18 +9,13 @@ contract StakeableVestingFactory is IStakeableVestingFactory {
     address public immutable override stakeableVestingImplementation;
 
     constructor(address token) {
-        StakeableVesting stakeableVesting = new StakeableVesting(token);
-        stakeableVesting.initialize(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF);
-        stakeableVesting.renounceOwnership();
-        stakeableVestingImplementation = address(stakeableVesting);
+        stakeableVestingImplementation = address(new StakeableVesting(token));
     }
 
     function deployStakeableVesting(
-        address owner,
         address beneficiary
     ) external override returns (address stakeableVesting) {
         stakeableVesting = Clones.clone(stakeableVestingImplementation);
-        IStakeableVesting(stakeableVesting).initialize(beneficiary);
-        IStakeableVesting(stakeableVesting).transferOwnership(owner);
+        IStakeableVesting(stakeableVesting).initialize(msg.sender, beneficiary);
     }
 }

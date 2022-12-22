@@ -12,17 +12,18 @@ contract StakeableVesting is Ownable, IStakeableVesting {
     constructor(address _token) {
         require(_token != address(0), "Token address zero");
         token = _token;
+        beneficiary = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+        renounceOwnership();
     }
 
-    function transferOwnership(
-        address newOwner
-    ) public override(Ownable, IStakeableVesting) {
-        Ownable.transferOwnership(newOwner);
-    }
-
-    function initialize(address _beneficiary) external override {
+    function initialize(
+        address _owner,
+        address _beneficiary
+    ) external override {
         require(beneficiary == address(0), "Already initialized");
+        require(_owner != address(0), "Owner address zero");
         require(_beneficiary != address(0), "Beneficiary address zero");
+        _transferOwnership(_owner);
         beneficiary = _beneficiary;
     }
 }
