@@ -2,6 +2,8 @@
 pragma solidity 0.8.17;
 
 interface IStakeableVesting {
+    event SetBeneficiary(address beneficiary);
+
     event WithdrawnFromVesting(uint256 amount);
 
     function initialize(

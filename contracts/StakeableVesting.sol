@@ -51,6 +51,12 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         });
     }
 
+    function setBeneficiary(address _beneficiary) external onlyOwner {
+        require(_beneficiary != address(0), "Beneficiary address zero");
+        beneficiary = _beneficiary;
+        emit SetBeneficiary(_beneficiary);
+    }
+
     function withdrawFromVesting() external override {
         require(msg.sender == beneficiary, "Sender not beneficiary");
         uint256 balance = IERC20(api3Token).balanceOf(address(this));
