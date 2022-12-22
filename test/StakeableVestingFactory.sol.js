@@ -57,45 +57,144 @@ describe('StakeableVestingFactory', function () {
   });
 
   describe('deployStakeableVesting', function () {
-    it('deploys initialized StakeableVesting', async function () {
-      const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
-        deployStakeableVestingFactory
-      );
-      const stakeableVestingAddress = await stakeableVestingFactory
-        .connect(roles.deployer)
-        .callStatic.deployStakeableVesting(
-          roles.beneficiary.address,
-          vestingParameters.startTimestamp,
-          vestingParameters.endTimestamp,
-          vestingParameters.amount
-        );
-      await stakeableVestingFactory
-        .connect(roles.deployer)
-        .deployStakeableVesting(
-          roles.beneficiary.address,
-          vestingParameters.startTimestamp,
-          vestingParameters.endTimestamp,
-          vestingParameters.amount
-        );
+    context('Owner address is not zero', function () {
+      context('Beneficiary address is not zero', function () {
+        context('Start timestamp is not zero', function () {
+          context('End is later than start', function () {
+            context('Amount is not zero', function () {
+              it('deploys initialized StakeableVesting', async function () {
+                const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
+                  deployStakeableVestingFactory
+                );
+                const stakeableVestingAddress = await stakeableVestingFactory
+                  .connect(roles.deployer)
+                  .callStatic.deployStakeableVesting(
+                    roles.beneficiary.address,
+                    vestingParameters.startTimestamp,
+                    vestingParameters.endTimestamp,
+                    vestingParameters.amount
+                  );
+                await stakeableVestingFactory
+                  .connect(roles.deployer)
+                  .deployStakeableVesting(
+                    roles.beneficiary.address,
+                    vestingParameters.startTimestamp,
+                    vestingParameters.endTimestamp,
+                    vestingParameters.amount
+                  );
 
-      const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
-      const stakeableVesting = new ethers.Contract(stakeableVestingAddress, StakeableVesting.abi, roles.deployer);
-      expect(await stakeableVesting.token()).to.equal(mockApi3Token.address);
-      expect(await stakeableVesting.owner()).to.equal(roles.deployer.address);
-      expect(await stakeableVesting.beneficiary()).to.equal(roles.beneficiary.address);
-      const vesting = await stakeableVesting.vesting();
-      expect(vesting.startTimestamp).to.equal(vestingParameters.startTimestamp);
-      expect(vesting.endTimestamp).to.equal(vestingParameters.endTimestamp);
-      expect(vesting.amount).to.equal(vestingParameters.amount);
-      await expect(
-        stakeableVesting.initialize(
-          roles.deployer.address,
-          roles.beneficiary.address,
-          vestingParameters.startTimestamp,
-          vestingParameters.endTimestamp,
-          vestingParameters.amount
-        )
-      ).to.be.revertedWith('Already initialized');
+                const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
+                const stakeableVesting = new ethers.Contract(
+                  stakeableVestingAddress,
+                  StakeableVesting.abi,
+                  roles.deployer
+                );
+                expect(await stakeableVesting.token()).to.equal(mockApi3Token.address);
+                expect(await stakeableVesting.owner()).to.equal(roles.deployer.address);
+                expect(await stakeableVesting.beneficiary()).to.equal(roles.beneficiary.address);
+                const vesting = await stakeableVesting.vesting();
+                expect(vesting.startTimestamp).to.equal(vestingParameters.startTimestamp);
+                expect(vesting.endTimestamp).to.equal(vestingParameters.endTimestamp);
+                expect(vesting.amount).to.equal(vestingParameters.amount);
+                await expect(
+                  stakeableVesting.initialize(
+                    roles.deployer.address,
+                    roles.beneficiary.address,
+                    vestingParameters.startTimestamp,
+                    vestingParameters.endTimestamp,
+                    vestingParameters.amount
+                  )
+                ).to.be.revertedWith('Already initialized');
+              });
+            });
+            context('Amount is zero', function () {
+              it('reverts', async function () {
+                const { roles, vestingParameters, stakeableVestingFactory } = await loadFixture(
+                  deployStakeableVestingFactory
+                );
+                await expect(
+                  stakeableVestingFactory
+                    .connect(roles.deployer)
+                    .deployStakeableVesting(
+                      roles.beneficiary.address,
+                      vestingParameters.startTimestamp,
+                      vestingParameters.endTimestamp,
+                      0
+                    )
+                ).to.be.revertedWith('Amount zero');
+              });
+            });
+          });
+          context('End is not later than start', function () {
+            it('reverts', async function () {
+              const { roles, vestingParameters, stakeableVestingFactory } = await loadFixture(
+                deployStakeableVestingFactory
+              );
+              await expect(
+                stakeableVestingFactory
+                  .connect(roles.deployer)
+                  .deployStakeableVesting(
+                    roles.beneficiary.address,
+                    vestingParameters.startTimestamp,
+                    vestingParameters.startTimestamp,
+                    vestingParameters.amount
+                  )
+              ).to.be.revertedWith('End not later than start');
+            });
+          });
+        });
+        context('Start timestamp is zero', function () {
+          it('reverts', async function () {
+            const { roles, vestingParameters, stakeableVestingFactory } = await loadFixture(
+              deployStakeableVestingFactory
+            );
+            await expect(
+              stakeableVestingFactory
+                .connect(roles.deployer)
+                .deployStakeableVesting(
+                  roles.beneficiary.address,
+                  0,
+                  vestingParameters.endTimestamp,
+                  vestingParameters.amount
+                )
+            ).to.be.revertedWith('Start timestamp zero');
+          });
+        });
+      });
+      context('Beneficiary address is zero', function () {
+        it('reverts', async function () {
+          const { roles, vestingParameters, stakeableVestingFactory } = await loadFixture(
+            deployStakeableVestingFactory
+          );
+          await expect(
+            stakeableVestingFactory
+              .connect(roles.deployer)
+              .deployStakeableVesting(
+                ethers.constants.AddressZero,
+                vestingParameters.startTimestamp,
+                vestingParameters.endTimestamp,
+                vestingParameters.amount
+              )
+          ).to.be.revertedWith('Beneficiary address zero');
+        });
+      });
+    });
+    context('Owner address is zero', function () {
+      it('reverts', async function () {
+        // This is impossible to test with the current StakeableVestingFactory implementation
+        const { vestingParameters, stakeableVestingFactory } = await loadFixture(deployStakeableVestingFactory);
+        const voidSignerAddressZero = new ethers.VoidSigner(ethers.constants.AddressZero, ethers.provider);
+        await expect(
+          stakeableVestingFactory
+            .connect(voidSignerAddressZero)
+            .callStatic.deployStakeableVesting(
+              ethers.constants.AddressZero,
+              vestingParameters.startTimestamp,
+              vestingParameters.endTimestamp,
+              vestingParameters.amount
+            )
+        ).to.be.revertedWith('Owner address zero');
+      });
     });
   });
 });
