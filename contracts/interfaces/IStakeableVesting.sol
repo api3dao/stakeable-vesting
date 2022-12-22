@@ -20,6 +20,22 @@ interface IStakeableVesting {
 
     function withdrawAsOwner() external;
 
+    function depositAtPool(uint256 amount) external;
+
+    function withdrawAtPool(uint256 amount) external;
+
+    function withdrawPrecalculatedAtPool(uint256 amount) external;
+
+    function stakeAtPool(uint256 amount) external;
+
+    function scheduleUnstakeAtPool(uint256 amount) external;
+
+    function unstakeAtPool() external;
+
+    function delegateAtPool(address delegate) external;
+
+    function undelegateAtPool() external;
+
     function unvestedAmount() external view returns (uint256);
 
     function api3Token() external returns (address);

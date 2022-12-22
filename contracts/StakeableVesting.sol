@@ -96,6 +96,47 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         emit WithdrawnAsOwner(withdrawalAmount);
     }
 
+    function depositAtPool(uint256 amount) external override onlyBeneficiary {
+        IERC20(api3Token).approve(api3Pool, amount);
+        IApi3Pool(api3Pool).depositRegular(amount);
+    }
+
+    function withdrawAtPool(uint256 amount) external override onlyBeneficiary {
+        IApi3Pool(api3Pool).withdrawRegular(amount);
+    }
+
+    // `precalculateUserLocked()` at Api3Pool can be called directly with the
+    // respective user address
+    function withdrawPrecalculatedAtPool(
+        uint256 amount
+    ) external override onlyBeneficiary {
+        IApi3Pool(api3Pool).withdrawPrecalculated(amount);
+    }
+
+    function stakeAtPool(uint256 amount) external override onlyBeneficiary {
+        IApi3Pool(api3Pool).stake(amount);
+    }
+
+    function scheduleUnstakeAtPool(
+        uint256 amount
+    ) external override onlyBeneficiary {
+        IApi3Pool(api3Pool).scheduleUnstake(amount);
+    }
+
+    function unstakeAtPool() external override onlyBeneficiary {
+        IApi3Pool(api3Pool).unstake();
+    }
+
+    function delegateAtPool(
+        address delegate
+    ) external override onlyBeneficiary {
+        IApi3Pool(api3Pool).delegateVotingPower(delegate);
+    }
+
+    function undelegateAtPool() external override onlyBeneficiary {
+        IApi3Pool(api3Pool).undelegateVotingPower();
+    }
+
     function unvestedAmount() public view override returns (uint256) {
         (uint32 startTimestamp, uint32 endTimestamp, uint192 amount) = (
             vesting.startTimestamp,
