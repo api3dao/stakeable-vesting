@@ -65,4 +65,46 @@ describe('StakeableVesting', function () {
       ).to.be.revertedWith('Already initialized');
     });
   });
+
+  describe('initialize', function () {
+    context('Owner address is zero', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, mockApi3Token } = await loadFixture(deployStakeableVesting);
+        const BadStakeableVestingFactoryFactory = await ethers.getContractFactory(
+          'BadStakeableVestingFactory',
+          roles.deployer
+        );
+        const badStakeableVestingFactory = await BadStakeableVestingFactoryFactory.deploy(mockApi3Token.address);
+        await mockApi3Token
+          .connect(roles.deployer)
+          .approve(badStakeableVestingFactory.address, vestingParameters.amount);
+        await expect(
+          badStakeableVestingFactory.deployStakeableVestingWithZeroOwner(
+            roles.beneficiary.address,
+            vestingParameters.startTimestamp,
+            vestingParameters.endTimestamp,
+            vestingParameters.amount
+          )
+        ).to.be.revertedWith('Owner address zero');
+      });
+    });
+    context('Token balance is not equal to vesting amount', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, mockApi3Token } = await loadFixture(deployStakeableVesting);
+        const BadStakeableVestingFactoryFactory = await ethers.getContractFactory(
+          'BadStakeableVestingFactory',
+          roles.deployer
+        );
+        const badStakeableVestingFactory = await BadStakeableVestingFactoryFactory.deploy(mockApi3Token.address);
+        await expect(
+          badStakeableVestingFactory.deployStakeableVestingWithoutTransferringTokens(
+            roles.beneficiary.address,
+            vestingParameters.startTimestamp,
+            vestingParameters.endTimestamp,
+            vestingParameters.amount
+          )
+        ).to.be.revertedWith('Balance is not vesting amount');
+      });
+    });
+  });
 });

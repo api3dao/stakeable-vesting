@@ -38,6 +38,10 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         require(_startTimestamp != 0, "Start timestamp zero");
         require(_endTimestamp > _startTimestamp, "End not later than start");
         require(_amount != 0, "Amount zero");
+        require(
+            IERC20(api3Token).balanceOf(address(this)) == _amount,
+            "Balance is not vesting amount"
+        );
         _transferOwnership(_owner);
         beneficiary = _beneficiary;
         vesting = Vesting({
