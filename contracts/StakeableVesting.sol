@@ -6,6 +6,10 @@ import "./interfaces/IStakeableVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "api3-dao/packages/pool/contracts/interfaces/v0.8/IApi3Pool.sol";
 
+// Implements the Api3Pool interface explicitly instead of acting as a general
+// call forwarder that is only restricted in interacting with Api3Token. This
+// is because the user is expected to interact with the contract through
+// generic ABI-generated UI such as Etherscan and Safe.
 contract StakeableVesting is Ownable, IStakeableVesting {
     struct Vesting {
         uint32 startTimestamp;
@@ -61,16 +65,19 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         });
     }
 
-    function setBeneficiary(address _beneficiary) external onlyOwner {
+    function setBeneficiary(address _beneficiary) external override onlyOwner {
         require(_beneficiary != address(0), "Beneficiary address zero");
         beneficiary = _beneficiary;
         emit SetBeneficiary(_beneficiary);
     }
 
-    // It is assumed that the vesting functionality at the pool contract is not
-    // being used.
-    // The fact that the staking rewards are locked is ignored, which is
-    // consistent with the vesting functionality at the pool contract.
+    function withdrawAsOwner() external override onlyOwner {
+        uint256 withdrawalAmount = IERC20(api3Token).balanceOf(address(this));
+        require(withdrawalAmount != 0, "No balance to withdraw");
+        IERC20(api3Token).transfer(msg.sender, withdrawalAmount);
+        emit WithdrawnAsOwner(withdrawalAmount);
+    }
+
     function withdrawAsBeneficiary() external override onlyBeneficiary {
         uint256 balance = IERC20(api3Token).balanceOf(address(this));
         uint256 totalBalance = balance + poolBalance();
@@ -89,13 +96,6 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         emit WithdrawnAsBeneficiary(withdrawalAmount);
     }
 
-    function withdrawAsOwner() external override onlyOwner {
-        uint256 withdrawalAmount = IERC20(api3Token).balanceOf(address(this));
-        require(withdrawalAmount != 0, "No balance to withdraw");
-        IERC20(api3Token).transfer(msg.sender, withdrawalAmount);
-        emit WithdrawnAsOwner(withdrawalAmount);
-    }
-
     function depositAtPool(uint256 amount) external override onlyBeneficiary {
         IERC20(api3Token).approve(api3Pool, amount);
         IApi3Pool(api3Pool).depositRegular(amount);
@@ -105,7 +105,7 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         IApi3Pool(api3Pool).withdrawRegular(amount);
     }
 
-    // `precalculateUserLocked()` at Api3Pool can be called directly with the
+    // `precalculateUserLocked()` at Api3Pool can be called by anyone with the
     // respective user address
     function withdrawPrecalculatedAtPool(
         uint256 amount
@@ -137,6 +137,8 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         IApi3Pool(api3Pool).undelegateVotingPower();
     }
 
+    // Ignores timelocks implemented at Api3Pool, though these will still limit
+    // the beneficiary while calling `withdrawAtPool()`
     function unvestedAmount() public view override returns (uint256) {
         (uint32 startTimestamp, uint32 endTimestamp, uint192 amount) = (
             vesting.startTimestamp,

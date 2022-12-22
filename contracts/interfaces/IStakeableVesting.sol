@@ -16,9 +16,11 @@ interface IStakeableVesting {
         uint192 amount
     ) external;
 
-    function withdrawAsBeneficiary() external;
+    function setBeneficiary(address _beneficiary) external;
 
     function withdrawAsOwner() external;
+
+    function withdrawAsBeneficiary() external;
 
     function depositAtPool(uint256 amount) external;
 
