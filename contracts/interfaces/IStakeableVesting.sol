@@ -10,7 +10,7 @@ interface IStakeableVesting {
         uint192 amount
     ) external;
 
-    function token() external returns (address);
+    function api3Token() external returns (address);
 
     function beneficiary() external returns (address);
 

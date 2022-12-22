@@ -7,14 +7,16 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract StakeableVestingFactory is IStakeableVestingFactory {
-    address public immutable override token;
+    address public immutable override api3Token;
 
     address public immutable override stakeableVestingImplementation;
 
-    constructor(address _token) {
-        require(_token != address(0), "Token address zero");
-        token = _token;
-        stakeableVestingImplementation = address(new StakeableVesting(_token));
+    constructor(address _api3Token) {
+        require(_api3Token != address(0), "Api3Token address zero");
+        api3Token = _api3Token;
+        stakeableVestingImplementation = address(
+            new StakeableVesting(_api3Token)
+        );
     }
 
     function deployStakeableVesting(

@@ -17,7 +17,7 @@ interface IStakeableVestingFactory {
         uint192 amount
     ) external returns (address stakeableVesting);
 
-    function token() external returns (address);
+    function api3Token() external returns (address);
 
     function stakeableVestingImplementation() external returns (address);
 }

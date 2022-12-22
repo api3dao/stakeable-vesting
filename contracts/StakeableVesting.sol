@@ -12,15 +12,15 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         uint192 amount;
     }
 
-    address public immutable override token;
+    address public immutable override api3Token;
 
     address public override beneficiary;
 
     Vesting public override vesting;
 
-    constructor(address _token) {
-        require(_token != address(0), "Token address zero");
-        token = _token;
+    constructor(address _api3Token) {
+        require(_api3Token != address(0), "Api3Token address zero");
+        api3Token = _api3Token;
         beneficiary = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
         renounceOwnership();
     }
