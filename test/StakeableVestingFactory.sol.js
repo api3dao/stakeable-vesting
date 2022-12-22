@@ -7,7 +7,8 @@ describe('StakeableVestingFactory', function () {
     const accounts = await ethers.getSigners();
     const roles = {
       deployer: accounts[0],
-      beneficiary: accounts[1],
+      mockTimelockManager: accounts[1],
+      beneficiary: accounts[2],
       randomPerson: accounts[9],
     };
     const vestingParameters = {
@@ -17,28 +18,28 @@ describe('StakeableVestingFactory', function () {
     };
     const MockApi3TokenFactory = await ethers.getContractFactory('MockApi3Token', roles.deployer);
     const mockApi3Token = await MockApi3TokenFactory.deploy();
-    const MockApi3PoolFactory = await ethers.getContractFactory('MockApi3Pool', roles.deployer);
-    const mockApi3Pool = await MockApi3PoolFactory.deploy();
+    const Api3PoolFactory = await ethers.getContractFactory('Api3Pool', roles.deployer);
+    const api3Pool = await Api3PoolFactory.deploy(mockApi3Token.address, roles.mockTimelockManager.address);
     const StakeableVestingFactoryFactory = await ethers.getContractFactory('StakeableVestingFactory', roles.deployer);
     const stakeableVestingFactory = await StakeableVestingFactoryFactory.deploy(
       mockApi3Token.address,
-      mockApi3Pool.address
+      api3Pool.address
     );
-    return { roles, vestingParameters, mockApi3Token, mockApi3Pool, stakeableVestingFactory };
+    return { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVestingFactory };
   }
 
   describe('constructor', function () {
     context('Api3Token address is not zero', function () {
       context('Api3Pool address is not zero', function () {
         it('deploys with initialized StakeableVesting implementation', async function () {
-          const { roles, vestingParameters, mockApi3Token, mockApi3Pool, stakeableVestingFactory } = await loadFixture(
+          const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVestingFactory } = await loadFixture(
             deployStakeableVestingFactory
           );
           expect(await stakeableVestingFactory.api3Token()).to.equal(mockApi3Token.address);
           const stakeableVestingImplementationAddress = await stakeableVestingFactory.stakeableVestingImplementation();
           const eoaDeployedStakeableVesting = await (
             await ethers.getContractFactory('StakeableVesting', roles.deployer)
-          ).deploy(mockApi3Token.address, mockApi3Pool.address);
+          ).deploy(mockApi3Token.address, api3Pool.address);
           expect(await ethers.provider.getCode(stakeableVestingImplementationAddress)).to.equal(
             await ethers.provider.getCode(eoaDeployedStakeableVesting.address)
           );
@@ -50,7 +51,7 @@ describe('StakeableVestingFactory', function () {
             roles.deployer
           );
           expect(await stakeableVestingImplementation.api3Token()).to.equal(mockApi3Token.address);
-          expect(await stakeableVestingImplementation.api3Pool()).to.equal(mockApi3Pool.address);
+          expect(await stakeableVestingImplementation.api3Pool()).to.equal(api3Pool.address);
           expect(await stakeableVestingImplementation.owner()).to.equal(ethers.constants.AddressZero);
           expect(await stakeableVestingImplementation.beneficiary()).to.equal(
             '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF'
@@ -81,13 +82,13 @@ describe('StakeableVestingFactory', function () {
     });
     context('Api3Token address is zero', function () {
       it('reverts', async function () {
-        const { roles, mockApi3Pool } = await loadFixture(deployStakeableVestingFactory);
+        const { roles, api3Pool } = await loadFixture(deployStakeableVestingFactory);
         const StakeableVestingFactoryFactory = await ethers.getContractFactory(
           'StakeableVestingFactory',
           roles.deployer
         );
         await expect(
-          StakeableVestingFactoryFactory.deploy(ethers.constants.AddressZero, mockApi3Pool.address)
+          StakeableVestingFactoryFactory.deploy(ethers.constants.AddressZero, api3Pool.address)
         ).to.be.revertedWith('Api3Token address zero');
       });
     });

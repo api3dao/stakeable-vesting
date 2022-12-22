@@ -1082,6 +1082,10 @@ anymatch@~3.1.1, anymatch@~3.1.2:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
 
+"api3-dao@git+https://github.com/api3dao/api3-dao.git#b516800f1d79d3e919cf432d5a7bf70a4d86257c":
+  version "0.1.0"
+  resolved "git+https://github.com/api3dao/api3-dao.git#b516800f1d79d3e919cf432d5a7bf70a4d86257c"
+
 argparse@^1.0.7:
   version "1.0.10"
   resolved "https://registry.yarnpkg.com/argparse/-/argparse-1.0.10.tgz#bcd6791ea5ae09725e17e5ad988134cd40b3d911"

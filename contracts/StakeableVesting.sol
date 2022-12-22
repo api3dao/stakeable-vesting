@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IStakeableVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IApi3Pool.sol";
+import "api3-dao/packages/pool/contracts/interfaces/v0.8/IApi3Pool.sol";
 
 contract StakeableVesting is Ownable, IStakeableVesting {
     struct Vesting {
@@ -124,7 +124,7 @@ contract StakeableVesting is Ownable, IStakeableVesting {
     }
 
     function unstakeAtPool() external override onlyBeneficiary {
-        IApi3Pool(api3Pool).unstake();
+        IApi3Pool(api3Pool).unstake(address(this));
     }
 
     function delegateAtPool(
