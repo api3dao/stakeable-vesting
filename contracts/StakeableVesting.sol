@@ -50,4 +50,41 @@ contract StakeableVesting is Ownable, IStakeableVesting {
             amount: _amount
         });
     }
+
+    function withdrawFromVesting() external override {
+        require(msg.sender == beneficiary, "Sender not beneficiary");
+        uint256 balance = IERC20(api3Token).balanceOf(address(this));
+        uint256 poolBalance = 0; // TODO: Consider both staked and unstaked tokens
+        uint256 totalBalance = balance + poolBalance;
+        uint256 unvestedAmountInTotalBalance = unvestedAmount();
+        require(
+            totalBalance > unvestedAmountInTotalBalance,
+            "No vested tokens"
+        );
+        uint256 vestedAmountInTotalBalance = totalBalance -
+            unvestedAmountInTotalBalance;
+        uint256 withdrawalAmount = vestedAmountInTotalBalance > balance
+            ? balance
+            : vestedAmountInTotalBalance;
+        require(withdrawalAmount != 0, "No balance to withdraw");
+        IERC20(api3Token).transfer(msg.sender, withdrawalAmount);
+        emit WithdrawnFromVesting(withdrawalAmount);
+    }
+
+    function unvestedAmount() public view override returns (uint256) {
+        (uint32 startTimestamp, uint32 endTimestamp, uint192 amount) = (
+            vesting.startTimestamp,
+            vesting.endTimestamp,
+            vesting.amount
+        );
+        if (block.timestamp <= startTimestamp) {
+            return amount;
+        } else if (block.timestamp >= endTimestamp) {
+            return 0;
+        } else {
+            uint256 passedTime = block.timestamp - startTimestamp;
+            uint256 totalTime = endTimestamp - startTimestamp;
+            return (amount * passedTime) / totalTime;
+        }
+    }
 }
