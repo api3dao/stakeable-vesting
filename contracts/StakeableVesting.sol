@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IStakeableVesting.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IApi3Pool.sol";
 
 contract StakeableVesting is Ownable, IStakeableVesting {
     struct Vesting {
@@ -14,6 +15,8 @@ contract StakeableVesting is Ownable, IStakeableVesting {
 
     address public immutable override api3Token;
 
+    address public immutable api3Pool;
+
     address public override beneficiary;
 
     Vesting public override vesting;
@@ -23,9 +26,11 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         _;
     }
 
-    constructor(address _api3Token) {
+    constructor(address _api3Token, address _api3Pool) {
         require(_api3Token != address(0), "Api3Token address zero");
         api3Token = _api3Token;
+        require(_api3Pool != address(0), "Api3Pool address zero");
+        api3Pool = _api3Pool;
         beneficiary = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
         renounceOwnership();
     }
@@ -62,10 +67,13 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         emit SetBeneficiary(_beneficiary);
     }
 
+    // It is assumed that the vesting functionality at the pool contract is not
+    // being used.
+    // The fact that the staking rewards are locked is ignored, which is
+    // consistent with the vesting functionality at the pool contract.
     function withdrawAsBeneficiary() external override onlyBeneficiary {
         uint256 balance = IERC20(api3Token).balanceOf(address(this));
-        uint256 poolBalance = 0; // TODO: Consider both staked and unstaked tokens
-        uint256 totalBalance = balance + poolBalance;
+        uint256 totalBalance = balance + poolBalance();
         uint256 unvestedAmountInTotalBalance = unvestedAmount();
         require(
             totalBalance > unvestedAmountInTotalBalance,
@@ -103,5 +111,12 @@ contract StakeableVesting is Ownable, IStakeableVesting {
             uint256 totalTime = endTimestamp - startTimestamp;
             return (amount * passedTime) / totalTime;
         }
+    }
+
+    function poolBalance() private view returns (uint256) {
+        uint256 staked = IApi3Pool(api3Pool).userStake(address(this));
+        (uint256 unstaked, , uint256 unstaking, , , , ) = IApi3Pool(api3Pool)
+            .getUser(address(this));
+        return staked + unstaked + unstaking;
     }
 }

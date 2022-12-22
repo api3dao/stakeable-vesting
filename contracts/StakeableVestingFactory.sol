@@ -11,11 +11,11 @@ contract StakeableVestingFactory is IStakeableVestingFactory {
 
     address public immutable override stakeableVestingImplementation;
 
-    constructor(address _api3Token) {
+    constructor(address _api3Token, address _api3Pool) {
         require(_api3Token != address(0), "Api3Token address zero");
         api3Token = _api3Token;
         stakeableVestingImplementation = address(
-            new StakeableVesting(_api3Token)
+            new StakeableVesting(_api3Token, _api3Pool)
         );
     }
 

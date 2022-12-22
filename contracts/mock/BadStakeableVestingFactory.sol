@@ -10,10 +10,10 @@ contract BadStakeableVestingFactory {
 
     address public immutable stakeableVestingImplementation;
 
-    constructor(address _api3Token) {
+    constructor(address _api3Token, address _api3Pool) {
         api3Token = _api3Token;
         stakeableVestingImplementation = address(
-            new StakeableVesting(_api3Token)
+            new StakeableVesting(_api3Token, _api3Pool)
         );
     }
 

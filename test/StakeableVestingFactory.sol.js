@@ -17,58 +17,78 @@ describe('StakeableVestingFactory', function () {
     };
     const MockApi3TokenFactory = await ethers.getContractFactory('MockApi3Token', roles.deployer);
     const mockApi3Token = await MockApi3TokenFactory.deploy();
+    const MockApi3PoolFactory = await ethers.getContractFactory('MockApi3Pool', roles.deployer);
+    const mockApi3Pool = await MockApi3PoolFactory.deploy();
     const StakeableVestingFactoryFactory = await ethers.getContractFactory('StakeableVestingFactory', roles.deployer);
-    const stakeableVestingFactory = await StakeableVestingFactoryFactory.deploy(mockApi3Token.address);
-    return { roles, vestingParameters, mockApi3Token, stakeableVestingFactory };
+    const stakeableVestingFactory = await StakeableVestingFactoryFactory.deploy(
+      mockApi3Token.address,
+      mockApi3Pool.address
+    );
+    return { roles, vestingParameters, mockApi3Token, mockApi3Pool, stakeableVestingFactory };
   }
 
   describe('constructor', function () {
     context('Api3Token address is not zero', function () {
-      it('deploys with initialized StakeableVesting implementation', async function () {
-        const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
-          deployStakeableVestingFactory
-        );
-        expect(await stakeableVestingFactory.api3Token()).to.equal(mockApi3Token.address);
-        const stakeableVestingImplementationAddress = await stakeableVestingFactory.stakeableVestingImplementation();
-        const eoaDeployedStakeableVesting = await (
-          await ethers.getContractFactory('StakeableVesting', roles.deployer)
-        ).deploy(mockApi3Token.address);
-        expect(await ethers.provider.getCode(stakeableVestingImplementationAddress)).to.equal(
-          await ethers.provider.getCode(eoaDeployedStakeableVesting.address)
-        );
+      context('Api3Pool address is not zero', function () {
+        it('deploys with initialized StakeableVesting implementation', async function () {
+          const { roles, vestingParameters, mockApi3Token, mockApi3Pool, stakeableVestingFactory } = await loadFixture(
+            deployStakeableVestingFactory
+          );
+          expect(await stakeableVestingFactory.api3Token()).to.equal(mockApi3Token.address);
+          const stakeableVestingImplementationAddress = await stakeableVestingFactory.stakeableVestingImplementation();
+          const eoaDeployedStakeableVesting = await (
+            await ethers.getContractFactory('StakeableVesting', roles.deployer)
+          ).deploy(mockApi3Token.address, mockApi3Pool.address);
+          expect(await ethers.provider.getCode(stakeableVestingImplementationAddress)).to.equal(
+            await ethers.provider.getCode(eoaDeployedStakeableVesting.address)
+          );
 
-        const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
-        const stakeableVestingImplementation = new ethers.Contract(
-          stakeableVestingImplementationAddress,
-          StakeableVesting.abi,
-          roles.deployer
-        );
-        expect(await stakeableVestingImplementation.api3Token()).to.equal(mockApi3Token.address);
-        expect(await stakeableVestingImplementation.owner()).to.equal(ethers.constants.AddressZero);
-        expect(await stakeableVestingImplementation.beneficiary()).to.equal(
-          '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF'
-        );
-        await expect(
-          stakeableVestingImplementation.initialize(
-            roles.deployer.address,
-            roles.beneficiary.address,
-            vestingParameters.startTimestamp,
-            vestingParameters.endTimestamp,
-            vestingParameters.amount
-          )
-        ).to.be.revertedWith('Already initialized');
+          const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
+          const stakeableVestingImplementation = new ethers.Contract(
+            stakeableVestingImplementationAddress,
+            StakeableVesting.abi,
+            roles.deployer
+          );
+          expect(await stakeableVestingImplementation.api3Token()).to.equal(mockApi3Token.address);
+          expect(await stakeableVestingImplementation.api3Pool()).to.equal(mockApi3Pool.address);
+          expect(await stakeableVestingImplementation.owner()).to.equal(ethers.constants.AddressZero);
+          expect(await stakeableVestingImplementation.beneficiary()).to.equal(
+            '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF'
+          );
+          await expect(
+            stakeableVestingImplementation.initialize(
+              roles.deployer.address,
+              roles.beneficiary.address,
+              vestingParameters.startTimestamp,
+              vestingParameters.endTimestamp,
+              vestingParameters.amount
+            )
+          ).to.be.revertedWith('Already initialized');
+        });
+      });
+      context('Api3Pool address is zero', function () {
+        it('reverts', async function () {
+          const { roles, mockApi3Token } = await loadFixture(deployStakeableVestingFactory);
+          const StakeableVestingFactoryFactory = await ethers.getContractFactory(
+            'StakeableVestingFactory',
+            roles.deployer
+          );
+          await expect(
+            StakeableVestingFactoryFactory.deploy(mockApi3Token.address, ethers.constants.AddressZero)
+          ).to.be.revertedWith('Api3Pool address zero');
+        });
       });
     });
     context('Api3Token address is zero', function () {
       it('reverts', async function () {
-        const { roles } = await loadFixture(deployStakeableVestingFactory);
+        const { roles, mockApi3Pool } = await loadFixture(deployStakeableVestingFactory);
         const StakeableVestingFactoryFactory = await ethers.getContractFactory(
           'StakeableVestingFactory',
           roles.deployer
         );
-        await expect(StakeableVestingFactoryFactory.deploy(ethers.constants.AddressZero)).to.be.revertedWith(
-          'Api3Token address zero'
-        );
+        await expect(
+          StakeableVestingFactoryFactory.deploy(ethers.constants.AddressZero, mockApi3Pool.address)
+        ).to.be.revertedWith('Api3Token address zero');
       });
     });
   });
