@@ -35,6 +35,9 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         require(beneficiary == address(0), "Already initialized");
         require(_owner != address(0), "Owner address zero");
         require(_beneficiary != address(0), "Beneficiary address zero");
+        require(_startTimestamp != 0, "Start timestamp zero");
+        require(_endTimestamp > _startTimestamp, "End not later than start");
+        require(_amount != 0, "Amount zero");
         _transferOwnership(_owner);
         beneficiary = _beneficiary;
         vesting = Vesting({
