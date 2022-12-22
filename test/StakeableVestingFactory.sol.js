@@ -21,6 +21,13 @@ describe('StakeableVestingFactory', function () {
     it('deploys initialized StakeableVesting implementation', async function () {
       const { roles, mockApi3Token, stakeableVestingFactory } = await loadFixture(deployStakeableVestingFactory);
       const stakeableVestingImplementationAddress = await stakeableVestingFactory.stakeableVestingImplementation();
+      const eoaDeployedStakeableVesting = await (
+        await ethers.getContractFactory('StakeableVesting', roles.deployer)
+      ).deploy(mockApi3Token.address);
+      expect(await ethers.provider.getCode(stakeableVestingImplementationAddress)).to.equal(
+        await ethers.provider.getCode(eoaDeployedStakeableVesting.address)
+      );
+
       const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
       const stakeableVestingImplementation = new ethers.Contract(
         stakeableVestingImplementationAddress,
@@ -33,7 +40,6 @@ describe('StakeableVestingFactory', function () {
       await expect(
         stakeableVestingImplementation.initialize(roles.deployer.address, roles.beneficiary.address)
       ).to.be.revertedWith('Already initialized');
-      // TODO: Verify implementation deployment
     });
   });
 
@@ -44,6 +50,7 @@ describe('StakeableVestingFactory', function () {
         .connect(roles.deployer)
         .callStatic.deployStakeableVesting(roles.beneficiary.address);
       await stakeableVestingFactory.connect(roles.deployer).deployStakeableVesting(roles.beneficiary.address);
+
       const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
       const stakeableVesting = new ethers.Contract(stakeableVestingAddress, StakeableVesting.abi, roles.deployer);
       expect(await stakeableVesting.token()).to.equal(mockApi3Token.address);
