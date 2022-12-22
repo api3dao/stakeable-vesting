@@ -74,9 +74,19 @@ describe('StakeableVestingFactory', function () {
                     vestingParameters.endTimestamp,
                     vestingParameters.amount
                   );
-                await stakeableVestingFactory
-                  .connect(roles.deployer)
-                  .deployStakeableVesting(
+                await expect(
+                  stakeableVestingFactory
+                    .connect(roles.deployer)
+                    .deployStakeableVesting(
+                      roles.beneficiary.address,
+                      vestingParameters.startTimestamp,
+                      vestingParameters.endTimestamp,
+                      vestingParameters.amount
+                    )
+                )
+                  .to.emit(stakeableVestingFactory, 'DeployedStakeableVesting')
+                  .withArgs(
+                    roles.deployer.address,
                     roles.beneficiary.address,
                     vestingParameters.startTimestamp,
                     vestingParameters.endTimestamp,

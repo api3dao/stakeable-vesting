@@ -26,5 +26,12 @@ contract StakeableVestingFactory is IStakeableVestingFactory {
             endTimestamp,
             amount
         );
+        emit DeployedStakeableVesting(
+            msg.sender,
+            beneficiary,
+            startTimestamp,
+            endTimestamp,
+            amount
+        );
     }
 }
