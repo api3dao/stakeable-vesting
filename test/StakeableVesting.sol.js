@@ -200,4 +200,40 @@ describe('StakeableVesting', function () {
       });
     });
   });
+
+  describe('withdrawAsOwner', function () {
+    context('Sender is owner', function () {
+      context('Balance is not zero', function () {
+        it('withdraws', async function () {
+          const { roles, vestingParameters, mockApi3Token, stakeableVesting } = await loadFixture(
+            factoryDeployStakeableVesting
+          );
+          const ownerBalanceBeforeWithdrawal = await mockApi3Token.balanceOf(roles.owner.address);
+          await expect(stakeableVesting.connect(roles.owner).withdrawAsOwner())
+            .to.emit(stakeableVesting, 'WithdrawnAsOwner')
+            .withArgs(vestingParameters.amount);
+          const ownerBalanceAfterWithdrawal = await mockApi3Token.balanceOf(roles.owner.address);
+          expect(ownerBalanceAfterWithdrawal.sub(ownerBalanceBeforeWithdrawal)).to.equal(vestingParameters.amount);
+          expect(await mockApi3Token.balanceOf(stakeableVesting.address)).to.equal(0);
+        });
+      });
+      context('Balance is zero', function () {
+        it('reverts', async function () {
+          const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+          await stakeableVesting.connect(roles.owner).withdrawAsOwner();
+          await expect(stakeableVesting.connect(roles.owner).withdrawAsOwner()).to.be.revertedWith(
+            'No balance to withdraw'
+          );
+        });
+      });
+    });
+    context('Sender is not owner', function () {
+      it('reverts', async function () {
+        const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+        await expect(stakeableVesting.connect(roles.randomPerson).withdrawAsOwner()).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+    });
+  });
 });
