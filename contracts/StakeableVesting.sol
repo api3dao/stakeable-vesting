@@ -73,6 +73,8 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         emit SetBeneficiary(_beneficiary);
     }
 
+    // By not modifying the state, this allows the vesting to be reinstituted
+    // simply by sending the withdrawn amount back
     function withdrawAsOwner() external override onlyOwner {
         uint256 withdrawalAmount = IERC20(api3Token).balanceOf(address(this));
         require(withdrawalAmount != 0, "No balance to withdraw");
