@@ -10,8 +10,8 @@ import "api3-dao/packages/pool/contracts/interfaces/v0.8/IApi3Pool.sol";
 // call forwarder that is only restricted in interacting with Api3Token. This
 // is because the user is expected to interact with the contract through
 // generic ABI-generated UI such as Etherscan and Safe. For governance, the
-// beneficiary is intended to delegate to an EOA of their or any other account,
-// which will use the DAO dashboard.
+// beneficiary is intended to delegate to an EOA of theirs or any other
+// account, which can then use the DAO dashboard.
 contract StakeableVesting is Ownable, IStakeableVesting {
     struct Vesting {
         uint32 startTimestamp;
