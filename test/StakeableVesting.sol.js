@@ -179,6 +179,7 @@ describe('StakeableVesting', function () {
           await expect(stakeableVesting.connect(roles.owner).setBeneficiary(roles.randomPerson.address))
             .to.emit(stakeableVesting, 'SetBeneficiary')
             .withArgs(roles.randomPerson.address);
+          expect(await stakeableVesting.beneficiary()).to.equal(roles.randomPerson.address);
         });
       });
       context('Beneficiary address is zero', function () {
