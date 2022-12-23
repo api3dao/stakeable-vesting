@@ -1,6 +1,7 @@
 const { ethers, artifacts } = require('hardhat');
-const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = require('chai');
+const { getVestingParameters } = require('./StakeableVesting.sol');
 
 describe('StakeableVestingFactory', function () {
   async function deployStakeableVestingFactory() {
@@ -12,11 +13,7 @@ describe('StakeableVestingFactory', function () {
       beneficiary: accounts[3],
       randomPerson: accounts[9],
     };
-    const vestingParameters = {
-      startTimestamp: new Date(Date.parse('2023-01-01')).getTime() / 1000,
-      endTimestamp: new Date(Date.parse('2027-01-01')).getTime() / 1000,
-      amount: ethers.utils.parseEther('100' + '000'),
-    };
+    const vestingParameters = getVestingParameters();
     const MockApi3TokenFactory = await ethers.getContractFactory('MockApi3Token', roles.deployer);
     const mockApi3Token = await MockApi3TokenFactory.deploy();
     await mockApi3Token
@@ -36,9 +33,8 @@ describe('StakeableVestingFactory', function () {
     context('Api3Token address is not zero', function () {
       context('Api3Pool address is not zero', function () {
         it('deploys with initialized StakeableVesting implementation', async function () {
-          const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVestingFactory } = await loadFixture(
-            deployStakeableVestingFactory
-          );
+          const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVestingFactory } =
+            await helpers.loadFixture(deployStakeableVestingFactory);
           expect(await stakeableVestingFactory.api3Token()).to.equal(mockApi3Token.address);
           const stakeableVestingImplementationAddress = await stakeableVestingFactory.stakeableVestingImplementation();
           const eoaDeployedStakeableVesting = await (
@@ -73,7 +69,7 @@ describe('StakeableVestingFactory', function () {
       });
       context('Api3Pool address is zero', function () {
         it('reverts', async function () {
-          const { roles, mockApi3Token } = await loadFixture(deployStakeableVestingFactory);
+          const { roles, mockApi3Token } = await helpers.loadFixture(deployStakeableVestingFactory);
           const StakeableVestingFactoryFactory = await ethers.getContractFactory(
             'StakeableVestingFactory',
             roles.deployer
@@ -86,7 +82,7 @@ describe('StakeableVestingFactory', function () {
     });
     context('Api3Token address is zero', function () {
       it('reverts', async function () {
-        const { roles, api3Pool } = await loadFixture(deployStakeableVestingFactory);
+        const { roles, api3Pool } = await helpers.loadFixture(deployStakeableVestingFactory);
         const StakeableVestingFactoryFactory = await ethers.getContractFactory(
           'StakeableVestingFactory',
           roles.deployer
@@ -106,9 +102,8 @@ describe('StakeableVestingFactory', function () {
             context('Start timestamp is not zero', function () {
               context('End is later than start', function () {
                 it('deploys initialized StakeableVesting', async function () {
-                  const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
-                    deployStakeableVestingFactory
-                  );
+                  const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } =
+                    await helpers.loadFixture(deployStakeableVestingFactory);
                   await mockApi3Token
                     .connect(roles.owner)
                     .approve(stakeableVestingFactory.address, vestingParameters.amount);
@@ -165,9 +160,8 @@ describe('StakeableVestingFactory', function () {
               });
               context('End is not later than start', function () {
                 it('reverts', async function () {
-                  const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
-                    deployStakeableVestingFactory
-                  );
+                  const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } =
+                    await helpers.loadFixture(deployStakeableVestingFactory);
                   await mockApi3Token
                     .connect(roles.owner)
                     .approve(stakeableVestingFactory.address, vestingParameters.amount);
@@ -186,7 +180,7 @@ describe('StakeableVestingFactory', function () {
             });
             context('Start timestamp is zero', function () {
               it('reverts', async function () {
-                const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
+                const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await helpers.loadFixture(
                   deployStakeableVestingFactory
                 );
                 await mockApi3Token
@@ -207,7 +201,7 @@ describe('StakeableVestingFactory', function () {
           });
           context('Beneficiary address is zero', function () {
             it('reverts', async function () {
-              const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
+              const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await helpers.loadFixture(
                 deployStakeableVestingFactory
               );
               await mockApi3Token
@@ -228,7 +222,7 @@ describe('StakeableVestingFactory', function () {
         });
         context('Owner owns at least the vesting amount', function () {
           it('reverts', async function () {
-            const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
+            const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await helpers.loadFixture(
               deployStakeableVestingFactory
             );
             await mockApi3Token.connect(roles.owner).approve(stakeableVestingFactory.address, vestingParameters.amount);
@@ -251,7 +245,7 @@ describe('StakeableVestingFactory', function () {
       });
       context('Owner has not approved at least the vesting amount', function () {
         it('reverts', async function () {
-          const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await loadFixture(
+          const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } = await helpers.loadFixture(
             deployStakeableVestingFactory
           );
           await mockApi3Token
@@ -272,7 +266,9 @@ describe('StakeableVestingFactory', function () {
     });
     context('Amount is zero', function () {
       it('reverts', async function () {
-        const { roles, vestingParameters, stakeableVestingFactory } = await loadFixture(deployStakeableVestingFactory);
+        const { roles, vestingParameters, stakeableVestingFactory } = await helpers.loadFixture(
+          deployStakeableVestingFactory
+        );
         await expect(
           stakeableVestingFactory
             .connect(roles.owner)

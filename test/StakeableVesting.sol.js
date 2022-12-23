@@ -1,6 +1,21 @@
 const { ethers, artifacts } = require('hardhat');
-const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
+const helpers = require('@nomicfoundation/hardhat-network-helpers');
 const { expect } = require('chai');
+
+module.exports = {
+  getVestingParameters,
+};
+
+function getVestingParameters() {
+  const timestampNow = Math.floor(Date.now() / 1000);
+  const timestampOneWeekFromNow = timestampNow + 7 * 24 * 60 * 60;
+  const timestampOneWeekAndFourYearsFromNow = timestampOneWeekFromNow + 4 * 365 * 24 * 60 * 60;
+  return {
+    startTimestamp: timestampOneWeekFromNow,
+    endTimestamp: timestampOneWeekAndFourYearsFromNow,
+    amount: ethers.utils.parseEther('100' + '000'),
+  };
+}
 
 describe('StakeableVesting', function () {
   async function eoaDeployStakeableVesting() {
@@ -12,11 +27,7 @@ describe('StakeableVesting', function () {
       beneficiary: accounts[3],
       randomPerson: accounts[9],
     };
-    const vestingParameters = {
-      startTimestamp: new Date(Date.parse('2023-01-01')).getTime() / 1000,
-      endTimestamp: new Date(Date.parse('2027-01-01')).getTime() / 1000,
-      amount: ethers.utils.parseEther('100' + '000'),
-    };
+    const vestingParameters = getVestingParameters();
     const MockApi3TokenFactory = await ethers.getContractFactory('MockApi3Token', roles.deployer);
     const mockApi3Token = await MockApi3TokenFactory.deploy();
     await mockApi3Token
@@ -38,11 +49,7 @@ describe('StakeableVesting', function () {
       beneficiary: accounts[3],
       randomPerson: accounts[9],
     };
-    const vestingParameters = {
-      startTimestamp: new Date(Date.parse('2023-01-01')).getTime() / 1000,
-      endTimestamp: new Date(Date.parse('2027-01-01')).getTime() / 1000,
-      amount: ethers.utils.parseEther('100' + '000'),
-    };
+    const vestingParameters = getVestingParameters();
     const MockApi3TokenFactory = await ethers.getContractFactory('MockApi3Token', roles.deployer);
     const mockApi3Token = await MockApi3TokenFactory.deploy();
     await mockApi3Token
@@ -81,7 +88,7 @@ describe('StakeableVesting', function () {
     context('Api3Token address is not zero', function () {
       context('Api3Pool address is not zero', function () {
         it('constructs uninitializable StakeableVesting', async function () {
-          const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVesting } = await loadFixture(
+          const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVesting } = await helpers.loadFixture(
             eoaDeployStakeableVesting
           );
           expect(await stakeableVesting.owner()).to.equal(ethers.constants.AddressZero);
@@ -101,7 +108,7 @@ describe('StakeableVesting', function () {
       });
       context('Api3Pool address is zero', function () {
         it('reverts', async function () {
-          const { roles, mockApi3Token } = await loadFixture(eoaDeployStakeableVesting);
+          const { roles, mockApi3Token } = await helpers.loadFixture(eoaDeployStakeableVesting);
           const StakeableVestingFactory = await ethers.getContractFactory('StakeableVesting', roles.deployer);
           await expect(
             StakeableVestingFactory.deploy(mockApi3Token.address, ethers.constants.AddressZero)
@@ -111,7 +118,7 @@ describe('StakeableVesting', function () {
     });
     context('Api3Token address is zero', function () {
       it('reverts', async function () {
-        const { roles, api3Pool } = await loadFixture(eoaDeployStakeableVesting);
+        const { roles, api3Pool } = await helpers.loadFixture(eoaDeployStakeableVesting);
         const StakeableVestingFactory = await ethers.getContractFactory('StakeableVesting', roles.deployer);
         await expect(StakeableVestingFactory.deploy(ethers.constants.AddressZero, api3Pool.address)).to.be.revertedWith(
           'Api3Token address zero'
@@ -124,7 +131,9 @@ describe('StakeableVesting', function () {
   describe('initialize', function () {
     context('Owner address is zero', function () {
       it('reverts', async function () {
-        const { roles, vestingParameters, mockApi3Token, api3Pool } = await loadFixture(eoaDeployStakeableVesting);
+        const { roles, vestingParameters, mockApi3Token, api3Pool } = await helpers.loadFixture(
+          eoaDeployStakeableVesting
+        );
         const BadStakeableVestingFactoryFactory = await ethers.getContractFactory(
           'BadStakeableVestingFactory',
           roles.deployer
@@ -148,7 +157,9 @@ describe('StakeableVesting', function () {
     });
     context('Token balance is not equal to vesting amount', function () {
       it('reverts', async function () {
-        const { roles, vestingParameters, mockApi3Token, api3Pool } = await loadFixture(eoaDeployStakeableVesting);
+        const { roles, vestingParameters, mockApi3Token, api3Pool } = await helpers.loadFixture(
+          eoaDeployStakeableVesting
+        );
         const BadStakeableVestingFactoryFactory = await ethers.getContractFactory(
           'BadStakeableVestingFactory',
           roles.deployer
@@ -175,7 +186,7 @@ describe('StakeableVesting', function () {
     context('Sender is owner', function () {
       context('Beneficiary address is not zero', function () {
         it('sets beneficiary', async function () {
-          const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+          const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
           await expect(stakeableVesting.connect(roles.owner).setBeneficiary(roles.randomPerson.address))
             .to.emit(stakeableVesting, 'SetBeneficiary')
             .withArgs(roles.randomPerson.address);
@@ -184,7 +195,7 @@ describe('StakeableVesting', function () {
       });
       context('Beneficiary address is zero', function () {
         it('reverts', async function () {
-          const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+          const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
           await expect(
             stakeableVesting.connect(roles.owner).setBeneficiary(ethers.constants.AddressZero)
           ).to.be.revertedWith('Beneficiary address zero');
@@ -193,7 +204,7 @@ describe('StakeableVesting', function () {
     });
     context('Sender is not owner', function () {
       it('reverts', async function () {
-        const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+        const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
         await expect(
           stakeableVesting.connect(roles.randomPerson).setBeneficiary(roles.randomPerson.address)
         ).to.be.revertedWith('Ownable: caller is not the owner');
@@ -204,8 +215,8 @@ describe('StakeableVesting', function () {
   describe('withdrawAsOwner', function () {
     context('Sender is owner', function () {
       context('Balance is not zero', function () {
-        it('withdraws', async function () {
-          const { roles, vestingParameters, mockApi3Token, stakeableVesting } = await loadFixture(
+        it('withdraws entire balance', async function () {
+          const { roles, vestingParameters, mockApi3Token, stakeableVesting } = await helpers.loadFixture(
             factoryDeployStakeableVesting
           );
           const ownerBalanceBeforeWithdrawal = await mockApi3Token.balanceOf(roles.owner.address);
@@ -219,7 +230,7 @@ describe('StakeableVesting', function () {
       });
       context('Balance is zero', function () {
         it('reverts', async function () {
-          const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+          const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
           await stakeableVesting.connect(roles.owner).withdrawAsOwner();
           await expect(stakeableVesting.connect(roles.owner).withdrawAsOwner()).to.be.revertedWith(
             'No balance to withdraw'
@@ -229,9 +240,89 @@ describe('StakeableVesting', function () {
     });
     context('Sender is not owner', function () {
       it('reverts', async function () {
-        const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+        const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
         await expect(stakeableVesting.connect(roles.randomPerson).withdrawAsOwner()).to.be.revertedWith(
           'Ownable: caller is not the owner'
+        );
+      });
+    });
+  });
+
+  describe('withdrawAsBeneficiary', function () {
+    context('Sender is beneficiary', function () {
+      context('Balance is not zero', function () {
+        context('There are vested tokens in balance', function () {
+          context('Vested amount is not smaller than balance', function () {
+            it('withdraws entire balance', async function () {
+              const { roles, vestingParameters, mockApi3Token, stakeableVesting } = await helpers.loadFixture(
+                factoryDeployStakeableVesting
+              );
+              // Deposit half of the balance to the pool
+              await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+              // 3/4 of the vesting time has elapsed
+              await helpers.time.setNextBlockTimestamp(
+                vestingParameters.startTimestamp +
+                  0.75 * (vestingParameters.endTimestamp - vestingParameters.startTimestamp)
+              );
+              // Beneficiary should receive the entire balance
+              const beneficiaryBalanceBeforeWithdrawal = await mockApi3Token.balanceOf(roles.beneficiary.address);
+              await expect(stakeableVesting.connect(roles.beneficiary).withdrawAsBeneficiary())
+                .to.emit(stakeableVesting, 'WithdrawnAsBeneficiary')
+                .withArgs(vestingParameters.amount.div(2));
+              const beneficiaryBalanceAfterWithdrawal = await mockApi3Token.balanceOf(roles.beneficiary.address);
+              expect(beneficiaryBalanceAfterWithdrawal.sub(beneficiaryBalanceBeforeWithdrawal)).to.equal(
+                vestingParameters.amount.div(2)
+              );
+              expect(await mockApi3Token.balanceOf(stakeableVesting.address)).to.equal(0);
+            });
+          });
+          context('Vested amount is smaller than balance', function () {
+            it('withdraws vested amount', async function () {
+              const { roles, vestingParameters, mockApi3Token, stakeableVesting } = await helpers.loadFixture(
+                factoryDeployStakeableVesting
+              );
+              // 3/4 of the vesting time has elapsed
+              await helpers.time.setNextBlockTimestamp(
+                vestingParameters.startTimestamp +
+                  0.75 * (vestingParameters.endTimestamp - vestingParameters.startTimestamp)
+              );
+              // Beneficiary should receive 3/4 of the balance
+              const beneficiaryBalanceBeforeWithdrawal = await mockApi3Token.balanceOf(roles.beneficiary.address);
+              await expect(stakeableVesting.connect(roles.beneficiary).withdrawAsBeneficiary())
+                .to.emit(stakeableVesting, 'WithdrawnAsBeneficiary')
+                .withArgs(vestingParameters.amount.mul(3).div(4));
+              const beneficiaryBalanceAfterWithdrawal = await mockApi3Token.balanceOf(roles.beneficiary.address);
+              expect(beneficiaryBalanceAfterWithdrawal.sub(beneficiaryBalanceBeforeWithdrawal)).to.equal(
+                vestingParameters.amount.mul(3).div(4)
+              );
+              expect(await mockApi3Token.balanceOf(stakeableVesting.address)).to.equal(vestingParameters.amount.div(4));
+            });
+          });
+        });
+        context('There are no vested tokens in balance', function () {
+          it('reverts', async function () {
+            const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+            await expect(stakeableVesting.connect(roles.beneficiary).withdrawAsBeneficiary()).to.be.revertedWith(
+              'Tokens in balance not vested yet'
+            );
+          });
+        });
+      });
+      context('Balance is zero', function () {
+        it('reverts', async function () {
+          const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+          await stakeableVesting.connect(roles.owner).withdrawAsOwner();
+          await expect(stakeableVesting.connect(roles.beneficiary).withdrawAsBeneficiary()).to.be.revertedWith(
+            'Balance zero'
+          );
+        });
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(stakeableVesting.connect(roles.randomPerson).withdrawAsBeneficiary()).to.be.revertedWith(
+          'Sender not beneficiary'
         );
       });
     });
