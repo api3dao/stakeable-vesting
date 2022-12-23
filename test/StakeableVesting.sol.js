@@ -170,4 +170,33 @@ describe('StakeableVesting', function () {
       });
     });
   });
+
+  describe('setBeneficiary', function () {
+    context('Sender is owner', function () {
+      context('Beneficiary address is not zero', function () {
+        it('sets beneficiary', async function () {
+          const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+          await expect(stakeableVesting.connect(roles.owner).setBeneficiary(roles.randomPerson.address))
+            .to.emit(stakeableVesting, 'SetBeneficiary')
+            .withArgs(roles.randomPerson.address);
+        });
+      });
+      context('Beneficiary address is zero', function () {
+        it('reverts', async function () {
+          const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+          await expect(
+            stakeableVesting.connect(roles.owner).setBeneficiary(ethers.constants.AddressZero)
+          ).to.be.revertedWith('Beneficiary address zero');
+        });
+      });
+    });
+    context('Sender is not owner', function () {
+      it('reverts', async function () {
+        const { roles, stakeableVesting } = await loadFixture(factoryDeployStakeableVesting);
+        await expect(
+          stakeableVesting.connect(roles.randomPerson).setBeneficiary(roles.randomPerson.address)
+        ).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+    });
+  });
 });
