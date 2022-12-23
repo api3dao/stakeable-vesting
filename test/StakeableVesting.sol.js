@@ -526,4 +526,29 @@ describe('StakeableVesting', function () {
       });
     });
   });
+
+  describe('unvestedAmount', function () {
+    context('Called before vesting start', function () {
+      it('returns vesting amount', async function () {
+        const { vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        expect(await stakeableVesting.unvestedAmount()).to.equal(vestingParameters.amount);
+      });
+    });
+    context('Called after vesting end', function () {
+      it('returns zero', async function () {
+        const { vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await helpers.time.increaseTo(vestingParameters.endTimestamp);
+        expect(await stakeableVesting.unvestedAmount()).to.equal(0);
+      });
+    });
+    context('Called during vesting', function () {
+      it('returns unvested amount', async function () {
+        const { vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await helpers.time.increaseTo(
+          vestingParameters.startTimestamp + 0.75 * (vestingParameters.endTimestamp - vestingParameters.startTimestamp)
+        );
+        expect(await stakeableVesting.unvestedAmount()).to.equal(vestingParameters.amount.div(4));
+      });
+    });
+  });
 });
