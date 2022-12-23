@@ -9,7 +9,9 @@ import "api3-dao/packages/pool/contracts/interfaces/v0.8/IApi3Pool.sol";
 // Implements the Api3Pool interface explicitly instead of acting as a general
 // call forwarder that is only restricted in interacting with Api3Token. This
 // is because the user is expected to interact with the contract through
-// generic ABI-generated UI such as Etherscan and Safe.
+// generic ABI-generated UI such as Etherscan and Safe. For governance, the
+// beneficiary is intended to delegate to an EOA of their or any other account,
+// which will use the DAO dashboard.
 contract StakeableVesting is Ownable, IStakeableVesting {
     struct Vesting {
         uint32 startTimestamp;
@@ -123,7 +125,7 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         IApi3Pool(api3Pool).scheduleUnstake(amount);
     }
 
-    function unstakeAtPool() external override onlyBeneficiary {
+    function unstakeAtPool() external override {
         IApi3Pool(api3Pool).unstake(address(this));
     }
 

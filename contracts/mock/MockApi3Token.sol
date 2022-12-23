@@ -7,4 +7,8 @@ contract MockApi3Token is ERC20 {
     constructor() ERC20("API3", "API3") {
         _mint(msg.sender, 100000000 ether);
     }
+
+    function getMinterStatus(address) external pure returns (bool) {
+        return false;
+    }
 }

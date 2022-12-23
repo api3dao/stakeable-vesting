@@ -327,4 +327,203 @@ describe('StakeableVesting', function () {
       });
     });
   });
+
+  describe('depositAtPool', function () {
+    context('Sender is beneficiary', function () {
+      it('approves tokens and deposits', async function () {
+        const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVesting } = await helpers.loadFixture(
+          factoryDeployStakeableVesting
+        );
+        const stakeableVestingBalanceBeforeDeposit = await mockApi3Token.balanceOf(stakeableVesting.address);
+        await expect(
+          stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2))
+        ).to.emit(api3Pool, 'Deposited');
+        const stakeableVestingBalanceAfterDeposit = await mockApi3Token.balanceOf(stakeableVesting.address);
+        expect(stakeableVestingBalanceBeforeDeposit.sub(stakeableVestingBalanceAfterDeposit)).to.equal(
+          vestingParameters.amount.div(2)
+        );
+        expect(await mockApi3Token.balanceOf(api3Pool.address)).to.equal(vestingParameters.amount.div(2));
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(
+          stakeableVesting.connect(roles.randomPerson).depositAtPool(vestingParameters.amount.div(2))
+        ).to.be.revertedWith('Sender not beneficiary');
+      });
+    });
+  });
+
+  describe('withdrawAtPool', function () {
+    context('Sender is beneficiary', function () {
+      it('withdraws', async function () {
+        const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVesting } = await helpers.loadFixture(
+          factoryDeployStakeableVesting
+        );
+        await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+        const stakeableVestingBalanceBeforeWithdrawal = await mockApi3Token.balanceOf(stakeableVesting.address);
+        await expect(
+          stakeableVesting.connect(roles.beneficiary).withdrawAtPool(vestingParameters.amount.div(2))
+        ).to.emit(api3Pool, 'Withdrawn');
+        const stakeableVestingBalanceAfterWithdrawal = await mockApi3Token.balanceOf(stakeableVesting.address);
+        expect(stakeableVestingBalanceAfterWithdrawal.sub(stakeableVestingBalanceBeforeWithdrawal)).to.equal(
+          vestingParameters.amount.div(2)
+        );
+        expect(await mockApi3Token.balanceOf(api3Pool.address)).to.equal(0);
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(
+          stakeableVesting.connect(roles.randomPerson).withdrawAtPool(vestingParameters.amount.div(2))
+        ).to.be.revertedWith('Sender not beneficiary');
+      });
+    });
+  });
+
+  describe('withdrawPrecalculatedAtPool', function () {
+    context('Sender is beneficiary', function () {
+      it('withdraws precalculated amount', async function () {
+        const { roles, vestingParameters, mockApi3Token, api3Pool, stakeableVesting } = await helpers.loadFixture(
+          factoryDeployStakeableVesting
+        );
+        await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+        const stakeableVestingBalanceBeforeWithdrawal = await mockApi3Token.balanceOf(stakeableVesting.address);
+        // Anyone can call `precalculateUserLocked()` for StakeableVesting
+        await api3Pool.connect(roles.randomPerson).precalculateUserLocked(stakeableVesting.address, 10);
+        await expect(
+          stakeableVesting.connect(roles.beneficiary).withdrawPrecalculatedAtPool(vestingParameters.amount.div(2))
+        ).to.emit(api3Pool, 'Withdrawn');
+        const stakeableVestingBalanceAfterWithdrawal = await mockApi3Token.balanceOf(stakeableVesting.address);
+        expect(stakeableVestingBalanceAfterWithdrawal.sub(stakeableVestingBalanceBeforeWithdrawal)).to.equal(
+          vestingParameters.amount.div(2)
+        );
+        expect(await mockApi3Token.balanceOf(api3Pool.address)).to.equal(0);
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(
+          stakeableVesting.connect(roles.randomPerson).withdrawPrecalculatedAtPool(vestingParameters.amount.div(2))
+        ).to.be.revertedWith('Sender not beneficiary');
+      });
+    });
+  });
+
+  describe('stakeAtPool', function () {
+    context('Sender is beneficiary', function () {
+      it('stakes', async function () {
+        const { roles, vestingParameters, api3Pool, stakeableVesting } = await helpers.loadFixture(
+          factoryDeployStakeableVesting
+        );
+        await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+        await expect(stakeableVesting.connect(roles.beneficiary).stakeAtPool(vestingParameters.amount.div(2))).to.emit(
+          api3Pool,
+          'Staked'
+        );
+        expect(await api3Pool.userStake(stakeableVesting.address)).to.equal(vestingParameters.amount.div(2));
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(
+          stakeableVesting.connect(roles.randomPerson).stakeAtPool(vestingParameters.amount.div(2))
+        ).to.be.revertedWith('Sender not beneficiary');
+      });
+    });
+  });
+
+  describe('scheduleUnstakeAtPool', function () {
+    context('Sender is beneficiary', function () {
+      it('schedules unstake', async function () {
+        const { roles, vestingParameters, api3Pool, stakeableVesting } = await helpers.loadFixture(
+          factoryDeployStakeableVesting
+        );
+        await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+        await stakeableVesting.connect(roles.beneficiary).stakeAtPool(vestingParameters.amount.div(2));
+        await expect(
+          stakeableVesting.connect(roles.beneficiary).scheduleUnstakeAtPool(vestingParameters.amount.div(2))
+        ).to.emit(api3Pool, 'ScheduledUnstake');
+        const user = await api3Pool.getUser(stakeableVesting.address);
+        expect(user.unstakeAmount).to.equal(vestingParameters.amount.div(2));
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(
+          stakeableVesting.connect(roles.randomPerson).scheduleUnstakeAtPool(vestingParameters.amount.div(2))
+        ).to.be.revertedWith('Sender not beneficiary');
+      });
+    });
+  });
+
+  describe('unstakeAtPool', function () {
+    it('unstakes', async function () {
+      const { roles, vestingParameters, api3Pool, stakeableVesting } = await helpers.loadFixture(
+        factoryDeployStakeableVesting
+      );
+      await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+      await stakeableVesting.connect(roles.beneficiary).stakeAtPool(vestingParameters.amount.div(2));
+      await stakeableVesting.connect(roles.beneficiary).scheduleUnstakeAtPool(vestingParameters.amount.div(2));
+      // Wait for the unstaking to mature
+      await helpers.time.increase(7 * 24 * 60 * 60);
+      await expect(stakeableVesting.connect(roles.randomPerson).unstakeAtPool()).to.emit(api3Pool, 'Unstaked');
+      expect(await api3Pool.userStake(stakeableVesting.address)).to.equal(0);
+    });
+  });
+
+  describe('delegateAtPool', function () {
+    context('Sender is beneficiary', function () {
+      it('delegates', async function () {
+        const { roles, vestingParameters, api3Pool, stakeableVesting } = await helpers.loadFixture(
+          factoryDeployStakeableVesting
+        );
+        await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+        await stakeableVesting.connect(roles.beneficiary).stakeAtPool(vestingParameters.amount.div(2));
+        await expect(stakeableVesting.connect(roles.beneficiary).delegateAtPool(roles.randomPerson.address)).to.emit(
+          api3Pool,
+          'Delegated'
+        );
+        expect(await api3Pool.userDelegate(stakeableVesting.address)).to.equal(roles.randomPerson.address);
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(
+          stakeableVesting.connect(roles.randomPerson).delegateAtPool(roles.randomPerson.address)
+        ).to.be.revertedWith('Sender not beneficiary');
+      });
+    });
+  });
+
+  describe('undelegateAtPool', function () {
+    context('Sender is beneficiary', function () {
+      it('undelegates', async function () {
+        const { roles, vestingParameters, api3Pool, stakeableVesting } = await helpers.loadFixture(
+          factoryDeployStakeableVesting
+        );
+        await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount.div(2));
+        await stakeableVesting.connect(roles.beneficiary).stakeAtPool(vestingParameters.amount.div(2));
+        await stakeableVesting.connect(roles.beneficiary).delegateAtPool(roles.randomPerson.address);
+        // Delegations cannot be updated frequently
+        await helpers.time.increase(7 * 24 * 60 * 60);
+        await expect(stakeableVesting.connect(roles.beneficiary).undelegateAtPool()).to.emit(api3Pool, 'Undelegated');
+        expect(await api3Pool.userDelegate(stakeableVesting.address)).to.equal(ethers.constants.AddressZero);
+      });
+    });
+    context('Sender is not beneficiary', function () {
+      it('reverts', async function () {
+        const { roles, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+        await expect(stakeableVesting.connect(roles.randomPerson).undelegateAtPool()).to.be.revertedWith(
+          'Sender not beneficiary'
+        );
+      });
+    });
+  });
 });
