@@ -105,6 +105,29 @@ describe('StakeableVestingFactory', function () {
                   it('deploys initialized StakeableVesting', async function () {
                     const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } =
                       await helpers.loadFixture(deployStakeableVestingFactory);
+                    const stakeableVestingImplementationAddress =
+                      await stakeableVestingFactory.stakeableVestingImplementation();
+                    // https://forum.openzeppelin.com/t/how-to-write-off-chain-method-for-predictdeterministicaddress-in-clones-sol/28883/2
+                    const calculatedStakeableVestingAddress = ethers.utils.getCreate2Address(
+                      stakeableVestingFactory.address,
+                      ethers.utils.solidityKeccak256(
+                        ['address', 'uint32', 'uint32', 'uint192'],
+                        [
+                          roles.beneficiary.address,
+                          vestingParameters.startTimestamp,
+                          vestingParameters.endTimestamp,
+                          vestingParameters.amount,
+                        ]
+                      ),
+                      ethers.utils.keccak256(
+                        ethers.utils.hexConcat([
+                          '0x3d602d80600a3d3981f3363d3d373d3d3d363d73',
+                          stakeableVestingImplementationAddress,
+                          '0x5af43d82803e903d91602b57fd5bf3',
+                        ])
+                      )
+                    );
+
                     await mockApi3Token
                       .connect(roles.owner)
                       .approve(stakeableVestingFactory.address, vestingParameters.amount);
@@ -116,6 +139,8 @@ describe('StakeableVestingFactory', function () {
                         vestingParameters.endTimestamp,
                         vestingParameters.amount
                       );
+                    expect(stakeableVestingAddress).to.equal(calculatedStakeableVestingAddress);
+
                     await expect(
                       stakeableVestingFactory
                         .connect(roles.owner)
