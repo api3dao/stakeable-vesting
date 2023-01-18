@@ -107,7 +107,6 @@ describe('StakeableVestingFactory', function () {
                       await helpers.loadFixture(deployStakeableVestingFactory);
                     const stakeableVestingImplementationAddress =
                       await stakeableVestingFactory.stakeableVestingImplementation();
-                    // https://forum.openzeppelin.com/t/how-to-write-off-chain-method-for-predictdeterministicaddress-in-clones-sol/28883/2
                     const calculatedStakeableVestingAddress = ethers.utils.getCreate2Address(
                       stakeableVestingFactory.address,
                       ethers.utils.solidityKeccak256(
@@ -121,7 +120,8 @@ describe('StakeableVestingFactory', function () {
                       ),
                       ethers.utils.keccak256(
                         ethers.utils.hexConcat([
-                          '0x3d602d80600a3d3981f3363d3d373d3d3d363d73',
+                          '0x3d602d80600a3d3981f3', // This is an optimized constructor implementation
+                          '0x363d3d373d3d3d363d73', // The rest is the minimal proxy contract as specified by EIP-1167
                           stakeableVestingImplementationAddress,
                           '0x5af43d82803e903d91602b57fd5bf3',
                         ])
