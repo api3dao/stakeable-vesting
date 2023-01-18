@@ -25,7 +25,17 @@ contract StakeableVestingFactory is IStakeableVestingFactory {
         uint32 endTimestamp,
         uint192 amount
     ) external override returns (address stakeableVesting) {
-        stakeableVesting = Clones.clone(stakeableVestingImplementation);
+        stakeableVesting = Clones.cloneDeterministic(
+            stakeableVestingImplementation,
+            keccak256(
+                abi.encodePacked(
+                    beneficiary,
+                    startTimestamp,
+                    endTimestamp,
+                    amount
+                )
+            )
+        );
         IERC20(api3Token).transferFrom(msg.sender, stakeableVesting, amount);
         IStakeableVesting(stakeableVesting).initialize(
             msg.sender,

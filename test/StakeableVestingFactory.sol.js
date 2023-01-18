@@ -101,61 +101,115 @@ describe('StakeableVestingFactory', function () {
           context('Beneficiary address is not zero', function () {
             context('Start timestamp is not zero', function () {
               context('End is later than start', function () {
-                it('deploys initialized StakeableVesting', async function () {
-                  const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } =
-                    await helpers.loadFixture(deployStakeableVestingFactory);
-                  await mockApi3Token
-                    .connect(roles.owner)
-                    .approve(stakeableVestingFactory.address, vestingParameters.amount);
-                  const stakeableVestingAddress = await stakeableVestingFactory
-                    .connect(roles.owner)
-                    .callStatic.deployStakeableVesting(
-                      roles.beneficiary.address,
-                      vestingParameters.startTimestamp,
-                      vestingParameters.endTimestamp,
-                      vestingParameters.amount
+                context('Same arguments were not used in a previous deployment', function () {
+                  it('deploys initialized StakeableVesting', async function () {
+                    const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } =
+                      await helpers.loadFixture(deployStakeableVestingFactory);
+                    const stakeableVestingImplementationAddress =
+                      await stakeableVestingFactory.stakeableVestingImplementation();
+                    const calculatedStakeableVestingAddress = ethers.utils.getCreate2Address(
+                      stakeableVestingFactory.address,
+                      ethers.utils.solidityKeccak256(
+                        ['address', 'uint32', 'uint32', 'uint192'],
+                        [
+                          roles.beneficiary.address,
+                          vestingParameters.startTimestamp,
+                          vestingParameters.endTimestamp,
+                          vestingParameters.amount,
+                        ]
+                      ),
+                      ethers.utils.keccak256(
+                        ethers.utils.hexConcat([
+                          '0x3d602d80600a3d3981f3', // This is an optimized constructor implementation
+                          '0x363d3d373d3d3d363d73', // The rest is the minimal proxy contract as specified by EIP-1167
+                          stakeableVestingImplementationAddress,
+                          '0x5af43d82803e903d91602b57fd5bf3',
+                        ])
+                      )
                     );
-                  await expect(
-                    stakeableVestingFactory
+
+                    await mockApi3Token
+                      .connect(roles.owner)
+                      .approve(stakeableVestingFactory.address, vestingParameters.amount);
+                    const stakeableVestingAddress = await stakeableVestingFactory
+                      .connect(roles.owner)
+                      .callStatic.deployStakeableVesting(
+                        roles.beneficiary.address,
+                        vestingParameters.startTimestamp,
+                        vestingParameters.endTimestamp,
+                        vestingParameters.amount
+                      );
+                    expect(stakeableVestingAddress).to.equal(calculatedStakeableVestingAddress);
+
+                    await expect(
+                      stakeableVestingFactory
+                        .connect(roles.owner)
+                        .deployStakeableVesting(
+                          roles.beneficiary.address,
+                          vestingParameters.startTimestamp,
+                          vestingParameters.endTimestamp,
+                          vestingParameters.amount
+                        )
+                    )
+                      .to.emit(stakeableVestingFactory, 'DeployedStakeableVesting')
+                      .withArgs(
+                        roles.owner.address,
+                        roles.beneficiary.address,
+                        vestingParameters.startTimestamp,
+                        vestingParameters.endTimestamp,
+                        vestingParameters.amount
+                      );
+
+                    const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
+                    const stakeableVesting = new ethers.Contract(
+                      stakeableVestingAddress,
+                      StakeableVesting.abi,
+                      roles.deployer
+                    );
+                    expect(await stakeableVesting.api3Token()).to.equal(mockApi3Token.address);
+                    expect(await stakeableVesting.owner()).to.equal(roles.owner.address);
+                    expect(await stakeableVesting.beneficiary()).to.equal(roles.beneficiary.address);
+                    const vesting = await stakeableVesting.vesting();
+                    expect(vesting.startTimestamp).to.equal(vestingParameters.startTimestamp);
+                    expect(vesting.endTimestamp).to.equal(vestingParameters.endTimestamp);
+                    expect(vesting.amount).to.equal(vestingParameters.amount);
+                    await expect(
+                      stakeableVesting.initialize(
+                        roles.owner.address,
+                        roles.beneficiary.address,
+                        vestingParameters.startTimestamp,
+                        vestingParameters.endTimestamp,
+                        vestingParameters.amount
+                      )
+                    ).to.be.revertedWith('Already initialized');
+                  });
+                });
+                context('Same arguments were used in a previous deployment', function () {
+                  it('reverts', async function () {
+                    const { roles, vestingParameters, mockApi3Token, stakeableVestingFactory } =
+                      await helpers.loadFixture(deployStakeableVestingFactory);
+                    await mockApi3Token
+                      .connect(roles.owner)
+                      .approve(stakeableVestingFactory.address, vestingParameters.amount);
+                    await stakeableVestingFactory
                       .connect(roles.owner)
                       .deployStakeableVesting(
                         roles.beneficiary.address,
                         vestingParameters.startTimestamp,
                         vestingParameters.endTimestamp,
                         vestingParameters.amount
-                      )
-                  )
-                    .to.emit(stakeableVestingFactory, 'DeployedStakeableVesting')
-                    .withArgs(
-                      roles.owner.address,
-                      roles.beneficiary.address,
-                      vestingParameters.startTimestamp,
-                      vestingParameters.endTimestamp,
-                      vestingParameters.amount
-                    );
-
-                  const StakeableVesting = await artifacts.readArtifact('StakeableVesting');
-                  const stakeableVesting = new ethers.Contract(
-                    stakeableVestingAddress,
-                    StakeableVesting.abi,
-                    roles.deployer
-                  );
-                  expect(await stakeableVesting.api3Token()).to.equal(mockApi3Token.address);
-                  expect(await stakeableVesting.owner()).to.equal(roles.owner.address);
-                  expect(await stakeableVesting.beneficiary()).to.equal(roles.beneficiary.address);
-                  const vesting = await stakeableVesting.vesting();
-                  expect(vesting.startTimestamp).to.equal(vestingParameters.startTimestamp);
-                  expect(vesting.endTimestamp).to.equal(vestingParameters.endTimestamp);
-                  expect(vesting.amount).to.equal(vestingParameters.amount);
-                  await expect(
-                    stakeableVesting.initialize(
-                      roles.owner.address,
-                      roles.beneficiary.address,
-                      vestingParameters.startTimestamp,
-                      vestingParameters.endTimestamp,
-                      vestingParameters.amount
-                    )
-                  ).to.be.revertedWith('Already initialized');
+                      );
+                    await expect(
+                      stakeableVestingFactory
+                        .connect(roles.owner)
+                        .deployStakeableVesting(
+                          roles.beneficiary.address,
+                          vestingParameters.startTimestamp,
+                          vestingParameters.endTimestamp,
+                          vestingParameters.amount
+                        )
+                    ).to.be.revertedWith('ERC1167: create2 failed');
+                  });
                 });
               });
               context('End is not later than start', function () {
