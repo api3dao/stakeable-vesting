@@ -38,6 +38,19 @@ interface IStakeableVesting {
 
     function undelegateAtPool() external;
 
+    function stateAtPool()
+        external
+        view
+        returns (
+            uint256 unstaked,
+            uint256 staked,
+            uint256 unstaking,
+            uint256 unstakeScheduledFor,
+            uint256 lockedStakingRewards,
+            address delegate,
+            uint256 lastDelegationUpdateTimestamp
+        );
+
     function unvestedAmount() external view returns (uint256);
 
     function api3Token() external returns (address);
