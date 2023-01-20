@@ -38,4 +38,4 @@ yarn test
 yarn test:coverage
 ```
 
-See [the user guide](./user-guide.md) for instructions for `owner` and `beneficiary`
+See the [`beneficiary` guide](./beneficiary-guide.md) and the [`owner` guide](./owner-guide.md) for instructions
