@@ -259,13 +259,10 @@ contract StakeableVesting is Ownable, IStakeableVesting {
     }
 
     /// @notice Returns the total balance of StakeableVesting at the pool
-    /// @dev The pool balance is considered to be staked + unstaked + unstaking
-    /// The "unstaking" here is an optimistic amount, in that if the pool is
-    /// slashed by the claims manager during the unstaking, the actual amount
-    /// of tokens that the StakeableVesting will be able to unstake will be
-    /// lower than this amount. Since it is impossible to predict what exactly
-    /// this amount will be, we choose the approximation that is the most
-    /// favorable for the beneficiary.
+    /// @dev Even though it is not certain that the beneficiary will be able to
+    /// unstake the funds that are currently staked or being unstaked without
+    /// getting slashed, the contract still counts them towards their total
+    /// balance in favor of the beneficiary
     /// @return Pool balance
     function poolBalance() private view returns (uint256) {
         uint256 staked = IApi3Pool(api3Pool).userStake(address(this));
