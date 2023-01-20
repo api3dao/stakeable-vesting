@@ -527,6 +527,27 @@ describe('StakeableVesting', function () {
     });
   });
 
+  describe('stateAtPool', function () {
+    it('returns state at pool', async function () {
+      const { roles, vestingParameters, stakeableVesting } = await helpers.loadFixture(factoryDeployStakeableVesting);
+      await stakeableVesting.connect(roles.beneficiary).depositAtPool(vestingParameters.amount);
+      await stakeableVesting.connect(roles.beneficiary).stakeAtPool(vestingParameters.amount.div(2));
+      const currentTimestamp = await helpers.time.latest();
+      await helpers.time.setNextBlockTimestamp(currentTimestamp + 1);
+      await stakeableVesting.connect(roles.beneficiary).delegateAtPool(roles.randomPerson.address);
+      await helpers.time.setNextBlockTimestamp(currentTimestamp + 2);
+      await stakeableVesting.connect(roles.beneficiary).scheduleUnstakeAtPool(vestingParameters.amount.div(8));
+      const state = await stakeableVesting.connect(roles.randomPerson).stateAtPool();
+      expect(state.unstaked).to.equal(vestingParameters.amount.div(2));
+      expect(state.staked).to.equal(vestingParameters.amount.div(8).mul(3));
+      expect(state.unstaking).to.equal(vestingParameters.amount.div(8));
+      expect(state.unstakeScheduledFor).to.equal(currentTimestamp + 2 + 7 * 24 * 60 * 60);
+      expect(state.lockedStakingRewards).to.equal(0);
+      expect(state.delegate).to.equal(roles.randomPerson.address);
+      expect(state.lastDelegationUpdateTimestamp).to.equal(currentTimestamp + 1);
+    });
+  });
+
   describe('unvestedAmount', function () {
     context('Called before vesting start', function () {
       it('returns vesting amount', async function () {
