@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "hardhat compile",
+    "deploy": "hardhat deploy --network mainnet",
     "lint": "yarn run prettier:check && yarn run lint:eslint && yarn run lint:solhint",
     "lint:solhint": "solhint ./contracts/**/*.sol",
     "lint:eslint": "eslint . --ext .js,.ts",
