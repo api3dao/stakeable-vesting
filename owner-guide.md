@@ -20,7 +20,7 @@
 
 - Have the above transactions executed.
   Find the address of the newly deployed StakeableVesting contract from the transaction and give it to the beneficiary.
-  You can also see `deriveStakeableVestingAddress()` from the StakeableVestingFactory tests.
+  You can also see `deriveStakeableVestingAddress()` in this repo.
 
 ## How to revoke a vesting?
 
