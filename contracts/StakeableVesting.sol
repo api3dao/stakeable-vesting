@@ -37,6 +37,14 @@ contract StakeableVesting is Ownable, IStakeableVesting {
     /// @notice Vesting parameters, including the schedule and the amount
     Vesting public override vesting;
 
+    /// @dev Prevents tokens from being locked by setting an unreasonably late
+    /// vesting end timestamp. The vesting periods are expected to be 4 years,
+    /// and we have 1 year of buffer here in case the vesting is required to
+    /// start in the future.
+    uint256
+        private constant MAXIMUM_TIME_BETWEEN_INITIALIZATION_AND_VESTING_END =
+        5 * 365 days;
+
     /// @dev Reverts if the sender is not the beneficiary
     modifier onlyBeneficiary() {
         require(msg.sender == beneficiary, "Sender not beneficiary");
@@ -83,6 +91,12 @@ contract StakeableVesting is Ownable, IStakeableVesting {
         require(_beneficiary != address(0), "Beneficiary address zero");
         require(_startTimestamp != 0, "Start timestamp zero");
         require(_endTimestamp > _startTimestamp, "End not later than start");
+        require(
+            _endTimestamp <=
+                block.timestamp +
+                    MAXIMUM_TIME_BETWEEN_INITIALIZATION_AND_VESTING_END,
+            "End is too far in the future"
+        );
         require(_amount != 0, "Amount zero");
         require(
             IERC20(api3Token).balanceOf(address(this)) == _amount,
