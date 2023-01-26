@@ -44,6 +44,16 @@
 ### _`staked` is zero_
 
 - Call `stateAtPool()`.
-  If `unstaked` is not zero, create a new transaction that calls `withdrawAtPool()` with `unstaked` as the amount and execute it.
+  If `unstaked - locked` is not zero, create a new transaction that calls `withdrawAtPool()` with `unstaked - locked` as the amount and execute it.
+
+- Create a new transaction that calls `withdrawAsOwner()`, execute it.
+
+### _`locked` is not zero_
+
+- This means the beneficiary has staking rewards that are not yet released.
+  Wait for 1 year.
+
+- Call `stateAtPool()`, confirm that `locked` is zero and `unstaked` is non-zero.
+  Call `withdrawAtPool()` with `unstaked` as the amount and execute it.
 
 - Create a new transaction that calls `withdrawAsOwner()`, execute it.
