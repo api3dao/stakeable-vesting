@@ -7,13 +7,14 @@ module.exports = {
     beneficiaryAddress,
     startTimestamp,
     endTimestamp,
-    amount
+    amount,
+    deployerAddress
   ) => {
     return ethers.utils.getCreate2Address(
       stakeableVestingFactoryAddress,
       ethers.utils.solidityKeccak256(
-        ['address', 'uint32', 'uint32', 'uint192'],
-        [beneficiaryAddress, startTimestamp, endTimestamp, amount]
+        ['address', 'uint32', 'uint32', 'uint192', 'address'],
+        [beneficiaryAddress, startTimestamp, endTimestamp, amount, deployerAddress]
       ),
       ethers.utils.keccak256(
         ethers.utils.hexConcat([

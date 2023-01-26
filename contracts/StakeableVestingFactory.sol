@@ -49,7 +49,8 @@ contract StakeableVestingFactory is IStakeableVestingFactory {
                     beneficiary,
                     startTimestamp,
                     endTimestamp,
-                    amount
+                    amount,
+                    msg.sender
                 )
             )
         );
