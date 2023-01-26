@@ -113,7 +113,8 @@ describe('StakeableVestingFactory', function () {
                         roles.beneficiary.address,
                         vestingParameters.startTimestamp,
                         vestingParameters.endTimestamp,
-                        vestingParameters.amount
+                        vestingParameters.amount,
+                        roles.owner.address
                       );
 
                       await mockApi3Token
