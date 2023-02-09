@@ -1,11 +1,12 @@
 const { deployments, ethers } = require('hardhat');
+const references = require('../deployments/references.json');
 
 async function main() {
   const deployment = await deployments.get('StakeableVestingFactory');
   const artifact = await deployments.getArtifact('StakeableVestingFactory');
   const encodedConstructorArguments = ethers.utils.defaultAbiCoder.encode(
     ['address', 'address'],
-    ['0x0b38210ea11411557c13457D4dA7dC6ea731B88a', '0x6dd655f10d4b9E242aE186D9050B68F725c76d76']
+    [references.Api3Token, references.Api3Pool]
   );
   const generatedBytecode = ethers.utils.solidityPack(
     ['bytes', 'bytes'],
