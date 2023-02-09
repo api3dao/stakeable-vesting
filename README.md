@@ -38,4 +38,14 @@ yarn test
 yarn test:coverage
 ```
 
+To derive the expected address of a StakeableVesting deployment
+
+```sh
+BENEFICIARY=... \
+  START_TIMESTAMP=...\
+  END_TIMESTAMP=...\
+  AMOUNT=...\
+  yarn derive-vesting-address
+```
+
 See the [`beneficiary` guide](./beneficiary-guide.md) and the [`owner` guide](./owner-guide.md) for instructions
