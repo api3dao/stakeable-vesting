@@ -13,7 +13,8 @@
     "prettier:check": "prettier --check \"./**/*.{js,ts,md,json,sol}\"",
     "prettier": "prettier --write \"./**/*.{js,ts,md,json,sol}\"",
     "test": "hardhat test --parallel",
-    "test:coverage": "hardhat coverage"
+    "test:coverage": "hardhat coverage",
+    "verify:local": "hardhat run ./scripts/verify-local.js --network mainnet"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
