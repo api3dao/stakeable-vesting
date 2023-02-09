@@ -14,5 +14,7 @@ jobs:
         run: yarn
       - name: Lint
         run: yarn lint
+      - name: Verify deployment
+        run: yarn verify:local
       - name: Run unit tests
         run: yarn test
