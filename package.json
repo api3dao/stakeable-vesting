@@ -40,7 +40,7 @@
     "typechain": "^8.1.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "4.8.0",
+    "@openzeppelin/contracts": "4.8.3",
     "api3-dao": "git+https://github.com/api3dao/api3-dao.git#b516800f1d79d3e919cf432d5a7bf70a4d86257c"
   }
 }
